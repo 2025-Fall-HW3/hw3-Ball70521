@@ -70,8 +70,40 @@ class MyPortfolio:
         """
         TODO: Complete Task 4 Below
         """
-        
-        
+        lookback_mom = 126
+        lookback_vol = 63
+        lookback_regime = 200
+        top_n = 3
+
+        for i in range(max(lookback_mom, lookback_vol, lookback_regime), len(self.price)):
+            window_returns_mom = self.returns.iloc[i - lookback_mom : i]
+            cum_ret = (1 + window_returns_mom[assets]).prod() - 1
+
+            winners = cum_ret.sort_values(ascending=False).head(top_n).index
+
+            window_returns_vol = self.returns.iloc[i - lookback_vol : i]
+            vol = window_returns_vol[winners].std()
+
+            vol = vol.replace(0, 1e-6)
+
+            inv_vol = 1.0 / vol
+            weights_core = inv_vol / inv_vol.sum()
+
+            spy_prices_window = self.price[self.exclude].iloc[i - lookback_regime : i]
+            spy_ma = spy_prices_window.mean()
+            spy_price_today = self.price[self.exclude].iloc[i]
+
+            if spy_price_today > spy_ma:
+                exposure = 1.0
+            else:
+                exposure = 0.3
+
+            date = self.price.index[i]
+
+            self.portfolio_weights.loc[date, :] = 0.0
+
+            self.portfolio_weights.loc[date, winners] = (weights_core.values * exposure)
+
         """
         TODO: Complete Task 4 Above
         """
